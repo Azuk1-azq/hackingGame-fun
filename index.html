@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHOST Terminal v2.3 — Operation NEMESIS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:#008080;min-height:100vh;overflow-x:hidden}
+#app{min-height:100vh}
+.win{background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;position:absolute}
+.tbar{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;padding:3px 6px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:bold;cursor:move;user-select:none}
+.tbtns{display:flex;gap:2px}
+.xb{width:16px;height:14px;background:#c0c0c0;border:1px solid;border-color:#fff #808080 #808080 #fff;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Courier New'}
+.xb:active{border-color:#808080 #fff #fff #808080}
+.wb{padding:6px}
+.b95{background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;padding:3px 10px;font-size:12px;cursor:pointer;font-family:'Courier New',monospace}
+.b95:active{border-color:#808080 #fff #fff #808080}
+.b95:disabled{color:#808080;cursor:default}
+.ins{border:2px solid;border-color:#808080 #fff #fff #808080;padding:3px 6px;font-size:11px;background:#c0c0c0;color:#000}
+.pw{background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;height:16px;overflow:hidden}
+.pb{background:#000080;height:100%;transition:width 0.3s}
+.sb{background:#c0c0c0;border-top:1px solid #808080;padding:2px 6px;font-size:11px;color:#000}
+.dcard{background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;padding:10px;cursor:pointer;text-align:center}
+.dcard:hover{background:#d0d0d0}
+.dcard:active{border-color:#808080 #fff #fff #808080}
+.dcard.sel{border-color:#000080;background:#c8c8ff}
+.term{background:#000;color:#00ff00;font-family:'Courier New',monospace;font-size:12px;padding:8px;height:280px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.til{display:flex;align-items:center;background:#000;padding:3px 8px}
+.pr{color:#00ff00;font-size:12px;white-space:nowrap}
+.ti{background:transparent;border:none;outline:none;color:#00ff00;font-family:'Courier New',monospace;font-size:12px;flex:1;caret-color:#00ff00}
+.mb{background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);min-width:300px;z-index:999;display:none}
+#traceBox{background:#c0c0c0;border:2px solid;border-color:#ff0000 #800000 #800000 #ff0000;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);min-width:300px;z-index:1000;display:none}
+#traceBox .tbar{background:linear-gradient(90deg,#800000,#cc0000)}
+#menuScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.menu-win{background:#c0c0c0;border:3px solid;border-color:#fff #808080 #808080 #fff;width:520px;max-width:100%}
+#taskbar{background:#c0c0c0;border-top:2px solid #fff;height:36px;display:flex;align-items:center;padding:0 4px;gap:4px;position:fixed;bottom:0;left:0;right:0;z-index:500}
+#clock-display{font-size:11px;border:2px solid;border-color:#808080 #fff #fff #808080;padding:2px 8px;white-space:nowrap;color:#000}
+#gameScreen{display:none;min-height:100vh;padding:8px;padding-bottom:44px;position:relative}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.timer-warn{color:#ff4444!important;animation:blink 0.5s infinite}
+.term::-webkit-scrollbar{width:12px}
+.term::-webkit-scrollbar-track{background:#333}
+.term::-webkit-scrollbar-thumb{background:#666;border:1px solid #444}
+.rank-table{width:100%;border-collapse:collapse;font-size:11px;color:#000}
+.rank-table th{background:#000080;color:#fff;padding:3px 6px;text-align:left;border:1px solid #808080}
+.rank-table td{padding:3px 6px;border:1px solid #c0c0c0;background:#fff}
+.rank-table tr:nth-child(even) td{background:#f0f0f0}
+.rank-table tr.me td{background:#ffffcc;font-weight:bold}
+.rank-win{background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;position:absolute;top:10px;left:760px;width:320px}
+.rank-body{height:400px;overflow-y:auto;padding:4px}
+.rank-body::-webkit-scrollbar{width:12px}
+.rank-body::-webkit-scrollbar-track{background:#c0c0c0}
+.rank-body::-webkit-scrollbar-thumb{background:#808080;border:1px solid #fff}
+.login-bar{background:#ffffcc;border:2px solid;border-color:#808080 #fff #fff #808080;padding:4px 8px;font-size:11px;display:flex;align-items:center;gap:8px;margin-bottom:4px;color:#000}
+.medal{font-size:14px}
+input[type=text]{background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;padding:2px 6px;font-family:'Courier New',monospace;font-size:12px;color:#000}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- MENU SCREEN -->
+<div id="menuScreen">
+  <div class="menu-win">
+    <div class="tbar"><span>🖥️ GHOST Terminal v2.3 — Operation NEMESIS</span></div>
+    <div style="padding:14px">
+      <!-- Auth bar -->
+      <div id="authBar" class="login-bar">
+        <span id="authStatus">🔴 未ログイン</span>
+        <button class="b95" id="loginBtn" onclick="doLogin()">Googleでログイン</button>
+        <button class="b95" id="logoutBtn" onclick="doLogout()" style="display:none">ログアウト</button>
+      </div>
+      <!-- Name setting -->
+      <div id="nameBar" style="display:none;margin-bottom:8px;display:none">
+        <div style="font-size:11px;color:#000;margin-bottom:4px">ランキング表示名：</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="nameInput" maxlength="20" placeholder="名前を入力（最大20文字）" style="flex:1">
+          <button class="b95" onclick="saveName()">保存</button>
+        </div>
+        <div id="nameMsg" style="font-size:10px;color:#800000;margin-top:2px"></div>
+      </div>
+
+      <div style="text-align:center;color:#000080;font-size:16px;font-weight:bold;margin-bottom:8px;border-bottom:2px solid #808080;padding-bottom:6px">
+        *** OPERATION NEMESIS — 今日のシード: <span id="seedDisp">----</span> ***
+      </div>
+      <div style="font-size:11px;color:#000;margin-bottom:10px;text-align:center">難易度を選択（ヒントなし・推理で突破せよ）</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="dcard" id="d_easy" onclick="selDiff('easy')">
+          <div style="font-size:20px">🟢</div>
+          <div style="font-weight:bold;font-size:12px;margin:3px 0">EASY</div>
+          <div style="font-size:10px;color:#444;line-height:1.5">制限時間: 10分<br>ミス: 5回</div>
+        </div>
+        <div class="dcard" id="d_normal" onclick="selDiff('normal')">
+          <div style="font-size:20px">🟡</div>
+          <div style="font-weight:bold;font-size:12px;margin:3px 0">NORMAL</div>
+          <div style="font-size:10px;color:#444;line-height:1.5">制限時間: 6分<br>ミス: 3回</div>
+        </div>
+        <div class="dcard" id="d_hard" onclick="selDiff('hard')">
+          <div style="font-size:20px">🔴</div>
+          <div style="font-weight:bold;font-size:12px;margin:3px 0">HARD</div>
+          <div style="font-size:10px;color:#444;line-height:1.5">制限時間: 3分<br>ミス: 1回<br>逆探知あり</div>
+        </div>
+        <div class="dcard" id="d_sandbox" onclick="selDiff('sandbox')">
+          <div style="font-size:20px">⚙️</div>
+          <div style="font-weight:bold;font-size:12px;margin:3px 0">SANDBOX</div>
+          <div style="font-size:10px;color:#444;line-height:1.5">制限時間なし<br>管理者コマンド<br>※ランキング対象外</div>
+        </div>
+      </div>
+
+      <div style="border-top:2px solid #808080;padding-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+        <button class="b95" id="startBtn" onclick="startGame()" disabled style="background:#aaa;color:#666">▶ ゲーム開始</button>
+        <button class="b95" onclick="openRanking()">🏆 ランキング</button>
+      </div>
+    </div>
+  </div>
+  <div style="color:#fff;font-size:10px;margin-top:6px;opacity:0.7">GHOST Terminal v2.3 — Daily Seed System</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen">
+  <!-- Terminal Window -->
+  <div class="win" id="termWin" style="top:10px;left:10px;width:530px">
+    <div class="tbar" onmousedown="dragStart(event,'termWin')">
+      <span>🖥️ GHOST Terminal — [<span id="diffLabel">-</span>] [<span id="targetDisp">???</span>]</span>
+      <div class="tbtns"><div class="xb" onclick="backMenu()">✕</div></div>
+    </div>
+    <div class="wb" style="padding:4px">
+      <div style="display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap">
+        <div class="ins">❤️ <span id="hpD">-</span></div>
+        <div class="ins">⏱️ <span id="timerD">--:--</span></div>
+        <div class="ins">🔓 <span id="stageD">待機中</span></div>
+        <div class="ins">📊 <span id="pctD">0</span>%</div>
+      </div>
+      <div class="pw" style="margin-bottom:4px"><div class="pb" id="pgBar" style="width:0%"></div></div>
+      <div class="term" id="tout"></div>
+      <div class="til">
+        <span class="pr">GHOST@nemesis:~$&nbsp;</span>
+        <input class="ti" id="tin" type="text" autocomplete="off" spellcheck="false" onkeydown="hkey(event)">
+      </div>
+    </div>
+    <div class="sb"><span id="statMsg">接続中...</span></div>
+  </div>
+
+  <!-- Ranking Window (in game) -->
+  <div class="win rank-win" id="rankWinGame" style="display:none">
+    <div class="tbar" onmousedown="dragStart(event,'rankWinGame')">
+      <span>🏆 ランキング</span>
+      <div class="tbtns"><div class="xb" onclick="document.getElementById('rankWinGame').style.display='none'">✕</div></div>
+    </div>
+    <div class="rank-body" id="rankBodyGame"><div style="padding:8px;font-size:11px;color:#000">読み込み中...</div></div>
+    <div class="sb" id="rankUpdatedGame">最終更新: -</div>
+  </div>
+</div>
+
+<!-- MESSAGE BOX -->
+<div class="mb" id="msgBox">
+  <div class="tbar"><span id="msgTit">情報</span><div class="tbtns"><div class="xb" onclick="closeMsg()">✕</div></div></div>
+  <div class="wb" style="text-align:center;padding:14px">
+    <div style="font-size:28px;margin-bottom:8px" id="msgIco">ℹ️</div>
+    <div id="msgTxt" style="font-size:12px;line-height:1.7;color:#000;margin-bottom:12px"></div>
+    <div id="msgBtns"></div>
+  </div>
+</div>
+
+<!-- TRACE ALERT -->
+<div id="traceBox">
+  <div class="tbar"><span>⚠️ 逆探知アラート！</span></div>
+  <div class="wb" style="text-align:center;padding:12px">
+    <div style="font-size:26px;margin-bottom:4px">🚨</div>
+    <div style="font-size:12px;color:#000;margin-bottom:6px;line-height:1.7">
+      IPを逆探知中！<b style="color:#cc0000">dodge</b> を入力せよ！
+    </div>
+    <div id="traceCount" style="font-size:32px;font-weight:bold;color:#cc0000">5</div>
+  </div>
+</div>
+
+<!-- RANKING MODAL (menu) -->
+<div class="mb" id="rankModal" style="min-width:420px;max-width:95vw">
+  <div class="tbar">
+    <span>🏆 ランキング — <span id="rankDiffLabel">EASY</span></span>
+    <div class="tbtns"><div class="xb" onclick="closeRankModal()">✕</div></div>
+  </div>
+  <div class="wb" style="padding:6px">
+    <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap">
+      <button class="b95" onclick="switchRankDiff('easy')" id="rbEasy">EASY</button>
+      <button class="b95" onclick="switchRankDiff('normal')" id="rbNormal">NORMAL</button>
+      <button class="b95" onclick="switchRankDiff('hard')" id="rbHard">HARD</button>
+    </div>
+    <div style="height:380px;overflow-y:auto" id="rankModalBody"><div style="padding:8px;font-size:11px;color:#000">読み込み中...</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+      <div style="font-size:10px;color:#444" id="rankModalUpdated">自動更新: 30秒</div>
+      <button class="b95" onclick="closeRankModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASKBAR -->
+<div id="taskbar">
+  <button class="b95" onclick="backMenu()" style="font-size:11px">🪟 メニュー</button>
+  <div style="border-left:1px solid #808080;height:24px;margin:0 2px"></div>
+  <button class="b95" onclick="openRankingInGame()" style="font-size:11px" id="rankTaskBtn" style="display:none">🏆 ランキング</button>
+  <div style="flex:1"></div>
+  <div id="clock-display">00:00</div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBD6-3hEPx_X607KMsGJgEikGzBq0QSwAw",
+  authDomain: "hacking-game-azuki.firebaseapp.com",
+  projectId: "hacking-game-azuki",
+  storageBucket: "hacking-game-azuki.firebasestorage.app",
+  messagingSenderId: "921156769812",
+  appId: "1:921156769812:web:5d9694ffc8f927cbc72f01"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null;
+let displayName = '';
+let rankInterval = null;
+let rankModalInterval = null;
+let currentRankDiff = 'easy';
+
+// ===== AUTH =====
+window.doLogin = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch(e) { console.error(e); }
+};
+window.doLogout = async () => {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) {
+    document.getElementById('authStatus').textContent = '🟢 ' + user.email;
+    document.getElementById('loginBtn').style.display = 'none';
+    document.getElementById('logoutBtn').style.display = '';
+    document.getElementById('nameBar').style.display = 'block';
+    // load saved name
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (snap.exists() && snap.data().displayName) {
+      displayName = snap.data().displayName;
+      document.getElementById('nameInput').value = displayName;
+    }
+  } else {
+    document.getElementById('authStatus').textContent = '🔴 未ログイン';
+    document.getElementById('loginBtn').style.display = '';
+    document.getElementById('logoutBtn').style.display = 'none';
+    document.getElementById('nameBar').style.display = 'none';
+    displayName = '';
+  }
+});
+
+window.saveName = async () => {
+  if (!currentUser) return;
+  const v = document.getElementById('nameInput').value.trim();
+  const msg = document.getElementById('nameMsg');
+  if (!v) { msg.textContent = '名前を入力してください'; return; }
+  if (v.length > 20) { msg.textContent = '20文字以内で入力してください'; return; }
+  // Check for offensive patterns (basic)
+  const bad = /[<>\"\'\\]/;
+  if (bad.test(v)) { msg.textContent = '使えない文字が含まれています'; return; }
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), { displayName: v, updatedAt: serverTimestamp() }, { merge: true });
+    displayName = v;
+    msg.style.color = '#007700';
+    msg.textContent = '✓ 保存しました';
+    setTimeout(() => { msg.textContent = ''; msg.style.color = '#800000'; }, 2000);
+  } catch(e) { msg.textContent = 'エラー: ' + e.message; }
+};
+
+// ===== SCORE SUBMIT =====
+window._submitScore = async (diff, timeUsed, mistakes, seed) => {
+  if (!currentUser || diff === 'sandbox') return;
+  if (!displayName) { showMsg('名前未設定', 'ランキングに登録するには名前を設定してください', '⚠️'); return; }
+  try {
+    const scoreId = currentUser.uid + '_' + diff + '_' + seed;
+    const existing = await getDoc(doc(db, 'scores', scoreId));
+    // Only record best time per user per diff per seed
+    if (existing.exists() && existing.data().timeUsed <= timeUsed) return;
+    await setDoc(doc(db, 'scores', scoreId), {
+      uid: currentUser.uid,
+      displayName: displayName,
+      diff: diff,
+      seed: seed,
+      timeUsed: timeUsed,
+      mistakes: mistakes,
+      createdAt: serverTimestamp()
+    });
+  } catch(e) { console.error('Score submit error:', e); }
+};
+
+// ===== RANKING FETCH =====
+async function fetchRanking(diffKey) {
+  const today = getTodaySeed();
+  try {
+    const q = query(
+      collection(db, 'scores'),
+      where('diff', '==', diffKey),
+      where('seed', '==', today),
+      orderBy('timeUsed', 'asc'),
+      limit(10000)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d, i) => ({ rank: i + 1, ...d.data() }));
+  } catch(e) { console.error('Ranking fetch error:', e); return []; }
+}
+
+function renderRankTable(rows, containerId) {
+  const el = document.getElementById(containerId);
+  if (!rows.length) { el.innerHTML = '<div style="padding:10px;font-size:11px;color:#000;text-align:center">まだスコアがありません</div>'; return; }
+  const myUid = currentUser ? currentUser.uid : null;
+  let html = '<table class="rank-table"><thead><tr><th>#</th><th>名前</th><th>タイム</th><th>ミス</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : '';
+    const isMe = myUid && r.uid === myUid;
+    const m = Math.floor(r.timeUsed / 60), s = r.timeUsed % 60;
+    const timeStr = m + ':' + String(s).padStart(2,'0');
+    html += `<tr class="${isMe?'me':''}"><td>${medal}${r.rank}</td><td>${escHtml(r.displayName||'??')}</td><td>${timeStr}</td><td>${r.mistakes}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.openRanking = async () => {
+  document.getElementById('rankModal').style.display = 'block';
+  await loadRankModal(currentRankDiff);
+  clearInterval(rankModalInterval);
+  rankModalInterval = setInterval(async () => {
+    await loadRankModal(currentRankDiff);
+  }, 30000);
+};
+window.closeRankModal = () => {
+  document.getElementById('rankModal').style.display = 'none';
+  clearInterval(rankModalInterval);
+};
+window.switchRankDiff = async (d) => {
+  currentRankDiff = d;
+  document.getElementById('rankDiffLabel').textContent = d.toUpperCase();
+  await loadRankModal(d);
+};
+async function loadRankModal(d) {
+  const rows = await fetchRanking(d);
+  renderRankTable(rows, 'rankModalBody');
+  document.getElementById('rankModalUpdated').textContent = '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
+}
+
+window.openRankingInGame = async () => {
+  const win = document.getElementById('rankWinGame');
+  win.style.display = win.style.display === 'none' ? 'block' : 'none';
+  if (win.style.display === 'block') {
+    await refreshInGameRank();
+    clearInterval(rankInterval);
+    rankInterval = setInterval(refreshInGameRank, 30000);
+  } else {
+    clearInterval(rankInterval);
+  }
+};
+async function refreshInGameRank() {
+  const d = window._currentDiff || 'easy';
+  const rows = await fetchRanking(d);
+  renderRankTable(rows, 'rankBodyGame');
+  document.getElementById('rankUpdatedGame').textContent = '更新: ' + new Date().toLocaleTimeString('ja-JP');
+}
+
+// expose to global game logic
+window._fetchRanking = fetchRanking;
+window._renderRankTable = renderRankTable;
+window._currentUser = () => currentUser;
+window._displayName = () => displayName;
+</script>
+
+<script>
+// ===== SEED SYSTEM =====
+function getTodaySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+}
+
+class SeededRandom {
+  constructor(seed) { this.s = seed >>> 0; }
+  next() {
+    this.s ^= this.s << 13; this.s ^= this.s >> 17; this.s ^= this.s << 5;
+    return (this.s >>> 0) / 0xFFFFFFFF;
+  }
+  int(min, max) { return Math.floor(this.next() * (max - min + 1)) + min; }
+  pick(arr) { return arr[this.int(0, arr.length - 1)]; }
+  shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(this.next() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+}
+
+// ===== GAME SCENARIO GENERATOR =====
+// All values are seeded — no hints given to player
+function generateScenario(diff, seed) {
+  const rng = new SeededRandom(seed * 31 + {'easy':1,'normal':2,'hard':3,'sandbox':4}[diff]);
+  
+  const allPorts = [21,22,23,25,53,80,110,143,443,445,1337,1433,3306,3389,5432,8080,8443,8888,9000,27017];
+  const portCount = diff === 'easy' ? 5 : diff === 'normal' ? 7 : 10;
+  const shuffled = rng.shuffle(allPorts).slice(0, portCount);
+  
+  // Vulnerable port is always one of the selected, but player must discover it
+  const vulnIdx = rng.int(0, shuffled.length - 1);
+  const vulnPort = shuffled[vulnIdx];
+  
+  // Password is randomly generated
+  const words = ['alpha','bravo','charlie','delta','echo','foxtrot','ghost','hydra','iris','juliet','kilo','lima'];
+  const nums = rng.int(100, 9999);
+  const syms = rng.pick(['!','@','#','$','%']);
+  const pw = rng.pick(words) + rng.pick(words) + nums + syms;
+  
+  // Target IP
+  const ip = '10.' + rng.int(0,255) + '.' + rng.int(0,255) + '.' + rng.int(1,254);
+  
+  // Hard mode: firewall port (player must guess correct port to knock)
+  const fwPorts = rng.shuffle([7000,7001,7002,7777,8000,8001,8080,9000,9001,9999]).slice(0,3);
+  
+  // IDS signature (hard)
+  const idsSigs = ['XOR_MASK_0x'+rng.int(10,99).toString(16).toUpperCase(),'TTL_'+rng.int(60,128),'SEQ_'+rng.int(1000,9999)];
+  const correctSig = rng.pick(idsSigs);
+  
+  // Pivot internal IP (hard)
+  const pivotIP = '192.168.' + rng.int(0,5) + '.' + rng.int(2,254);
+  
+  // Crack method: player must choose correct method
+  const crackMethods = rng.shuffle(['dictionary','bruteforce','rainbow','hybrid','mask']).slice(0,3);
+  const correctMethod = crackMethods[0];
+  
+  // Download path (player must find correct path)
+  const paths = rng.shuffle(['/etc/shadow','/root/.ssh/id_rsa','/var/secret/nemesis.dat','/home/admin/.bashrc','/tmp/.hidden/data.bin','/srv/classified/report.enc']);
+  const correctPath = paths[0];
+  
+  return { ports: shuffled.sort((a,b)=>a-b), vulnPort, pw, ip, fwPorts, correctSig, pivotIP, crackMethods, correctMethod, correctPath };
+}
+
+// ===== DIFFICULTY CONFIG =====
+const DIFFS = {
+  easy:    { label:'EASY',    time:600, hp:5, traceEvent:false, delay:100 },
+  normal:  { label:'NORMAL',  time:360, hp:3, traceEvent:false, delay:160 },
+  hard:    { label:'HARD',    time:180, hp:1, traceEvent:true,  delay:200 },
+  sandbox: { label:'SANDBOX', time:null,hp:999,traceEvent:false,delay:50  }
+};
+
+let diff = '', gs = {}, scenario = null;
+let cmdHist = [], histIdx = -1;
+let timerInterval = null, traceInterval = null;
+let mistakes = 0;
+
+// ===== MENU =====
+function selDiff(d) {
+  diff = d;
+  document.querySelectorAll('.dcard').forEach(c => c.classList.remove('sel'));
+  document.getElementById('d_' + d).classList.add('sel');
+  const btn = document.getElementById('startBtn');
+  btn.disabled = false; btn.style.background = ''; btn.style.color = '';
+}
+
+function startGame() {
+  if (!diff) return;
+  document.getElementById('menuScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  document.getElementById('rankTaskBtn').style.display = '';
+  window._currentDiff = diff;
+  const seed = getTodaySeed();
+  scenario = generateScenario(diff, seed);
+  mistakes = 0;
+  initGameState();
+  initTerminal();
+  setTimeout(() => document.getElementById('tin').focus(), 100);
+}
+
+function backMenu() {
+  clearInterval(timerInterval); clearInterval(traceInterval);
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('menuScreen').style.display = 'flex';
+  document.getElementById('tout').innerHTML = '';
+  document.getElementById('traceBox').style.display = 'none';
+  document.getElementById('msgBox').style.display = 'none';
+  document.getElementById('timerD').classList.remove('timer-warn');
+  document.getElementById('rankWinGame').style.display = 'none';
+  clearInterval(window._rankInterval);
+}
+
+// ===== GAME STATE =====
+function initGameState() {
+  const D = DIFFS[diff];
+  gs = {
+    hp: D.hp, maxHp: D.hp, progress: 0, stage: 0,
+    timeLeft: D.time, over: false,
+    scanned: false, exploited: false, cracked: false,
+    firewalled: false, idsBypassed: false, pivoted: false,
+    traceActive: false, traceCnt: 0,
+    sbMode: diff === 'sandbox',
+    startTime: Date.now()
+  };
+  document.getElementById('diffLabel').textContent = DIFFS[diff].label;
+  document.getElementById('timerD').classList.remove('timer-warn');
+  document.getElementById('targetDisp').textContent = scenario.ip;
+  updateStatus();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  if (!DIFFS[diff].time) { document.getElementById('timerD').textContent = '∞'; return; }
+  timerInterval = setInterval(() => {
+    if (gs.over) return;
+    gs.timeLeft--;
+    updateStatus();
+    if (gs.timeLeft <= 30) document.getElementById('timerD').classList.add('timer-warn');
+    if (gs.timeLeft <= 0) {
+      clearInterval(timerInterval);
+      gs.over = true;
+      print('[!!] タイムオーバー！','c-red');
+      setTimeout(() => showMsg('タイムオーバー','時間切れ！ミッション失敗...','⌛','閉じる',true), 500);
+    }
+  }, 1000);
+}
+
+function updateStatus() {
+  document.getElementById('hpD').textContent = gs.hp + (gs.maxHp < 999 ? '/' + gs.maxHp : '');
+  if (DIFFS[diff].time) {
+    const m = Math.floor(gs.timeLeft / 60), s = gs.timeLeft % 60;
+    document.getElementById('timerD').textContent = m + ':' + String(s).padStart(2,'0');
+  }
+  const sn = ['待機中','スキャン中','侵入中','認証突破中','DL中','完了'];
+  document.getElementById('stageD').textContent = sn[gs.stage] || '完了';
+  document.getElementById('pctD').textContent = gs.progress;
+  document.getElementById('pgBar').style.width = gs.progress + '%';
+}
+
+// ===== OUTPUT =====
+function print(text, cls='c-green') {
+  const out = document.getElementById('tout');
+  const d = document.createElement('div');
+  d.style.lineHeight = '1.5';
+  const colors = {'c-green':'#00ff00','c-yellow':'#ffff00','c-red':'#ff4444','c-cyan':'#00ffff','c-white':'#ffffff'};
+  d.style.color = colors[cls] || '#00ff00';
+  d.textContent = text;
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+}
+function pd(lines, delay=80) {
+  lines.forEach(([t,c],i) => setTimeout(() => print(t,c||'c-green'), i*delay));
+}
+
+function initTerminal() {
+  document.getElementById('tout').innerHTML = '';
+  pd([
+    ['╔══════════════════════════════════════╗','c-cyan'],
+    ['║  GHOST TERMINAL v2.3 [SECURE MODE]  ║','c-cyan'],
+    ['╚══════════════════════════════════════╝','c-cyan'],
+    ['','c-white'],
+    ['[*] 暗号化トンネル確立...','c-yellow'],
+    ['[+] ターゲット: ' + scenario.ip,'c-green'],
+    ['[INFO] 難易度: ' + DIFFS[diff].label,'c-white'],
+    diff==='sandbox'?['[ADMIN] 管理者モード有効','c-yellow']:['[INFO] 自力で突破せよ。ヒントは出ない。','c-white'],
+  ], 100);
+}
+
+// ===== HP / WIN / LOSE =====
+function loseHp(reason) {
+  gs.hp--; mistakes++; updateStatus();
+  print('[!] ' + reason, 'c-red');
+  print('[!] ライフ残り: ' + gs.hp + (gs.maxHp < 999 ? '/' + gs.maxHp : ''), 'c-red');
+  if (gs.hp <= 0) triggerGameOver();
+  else showMsg('警告！', reason + '<br><br>残りライフ: ' + gs.hp, '⚠️');
+}
+
+function triggerGameOver() {
+  gs.over = true; clearInterval(timerInterval);
+  pd([
+    ['','c-white'],
+    ['!!! TRACED — GAME OVER !!!','c-red'],
+    ['[!!] ミッション失敗...','c-red'],
+  ], 80);
+  setTimeout(() => showMsg('ゲームオーバー','IPが特定されました！<br>ミッション失敗...','☠️','閉じる',true), 700);
+}
+
+function triggerWin() {
+  gs.over = true; clearInterval(timerInterval);
+  gs.progress = 100; gs.stage = 5; updateStatus();
+  const timeUsed = DIFFS[diff].time ? (DIFFS[diff].time - gs.timeLeft) : Math.floor((Date.now()-gs.startTime)/1000);
+  const m = Math.floor(timeUsed/60), s = timeUsed%60;
+  pd([
+    ['','c-white'],
+    ['★★★ MISSION COMPLETE ★★★','c-yellow'],
+    ['[+] NEMESIS.dat 取得完了','c-green'],
+    ['[+] ログ消去完了','c-green'],
+  ], 100);
+  if (diff !== 'sandbox') {
+    window._submitScore && window._submitScore(diff, timeUsed, mistakes, getTodaySeed());
+  }
+  setTimeout(() => {
+    const timeStr = m + '分' + String(s).padStart(2,'0') + '秒';
+    showMsg('ミッション完了！',
+      '難易度: ' + DIFFS[diff].label + '<br>タイム: ' + timeStr + '<br>ミス: ' + mistakes + '回' +
+      (diff!=='sandbox'?'<br><br>スコアを登録しました！':''),
+      '🏆','閉じる',true);
+  }, 1200);
+}
+
+// ===== MSG BOX =====
+function showMsg(tit, txt, ico='ℹ️', btn='OK', showRetry=false) {
+  document.getElementById('msgTit').textContent = tit;
+  document.getElementById('msgTxt').innerHTML = txt;
+  document.getElementById('msgIco').textContent = ico;
+  let html = '<button class="b95" onclick="closeMsg()">' + btn + '</button>';
+  if (showRetry) html += ' <button class="b95" onclick="backMenu()">メニューへ</button> <button class="b95" onclick="restartGame()">もう一度</button>';
+  document.getElementById('msgBtns').innerHTML = html;
+  document.getElementById('msgBox').style.display = 'block';
+}
+function closeMsg() { document.getElementById('msgBox').style.display = 'none'; }
+function restartGame() { closeMsg(); mistakes=0; initGameState(); initTerminal(); }
+
+// ===== TRACE (HARD) =====
+function scheduleTrace() {
+  if (!DIFFS[diff].traceEvent || gs.over) return;
+  const wait = 15000 + Math.random()*20000;
+  setTimeout(() => { if (!gs.over && !gs.traceActive) startTraceEvent(); }, wait);
+}
+function startTraceEvent() {
+  if (gs.traceActive || gs.over) return;
+  gs.traceActive = true; gs.traceCnt = 5;
+  print('[!!] 逆探知アラート！"dodge" と入力せよ！','c-red');
+  const box = document.getElementById('traceBox');
+  box.style.display = 'block';
+  document.getElementById('traceCount').textContent = gs.traceCnt;
+  clearInterval(traceInterval);
+  traceInterval = setInterval(() => {
+    gs.traceCnt--;
+    document.getElementById('traceCount').textContent = gs.traceCnt;
+    if (gs.traceCnt <= 0) {
+      clearInterval(traceInterval);
+      box.style.display = 'none';
+      gs.traceActive = false;
+      loseHp('逆探知された！dodge が間に合わなかった');
+    }
+  }, 1000);
+}
+
+// ===== COMMAND HANDLER =====
+function hkey(e) {
+  const input = document.getElementById('tin');
+  if (e.key === 'Enter') {
+    const raw = input.value.trim();
+    if (!raw) return;
+    cmdHist.unshift(raw); histIdx = -1; input.value = '';
+    print('GHOST@nemesis:~$ ' + raw, 'c-green');
+    if (gs.over && !gs.sbMode) { print('[!!] 接続切断','c-red'); return; }
+    handleCmd(raw.split(/\s+/));
+    updateStatus();
+  } else if (e.key==='ArrowUp') {
+    if (histIdx<cmdHist.length-1) histIdx++;
+    input.value = cmdHist[histIdx]||''; e.preventDefault();
+  } else if (e.key==='ArrowDown') {
+    if (histIdx>0) histIdx--; else histIdx=-1;
+    input.value = histIdx>=0?cmdHist[histIdx]:''; e.preventDefault();
+  }
+}
+
+function handleCmd(parts) {
+  const cmd = parts[0].toLowerCase(), args = parts.slice(1);
+  if (gs.sbMode && cmd==='admin') { handleAdmin(args); return; }
+  const DLY = DIFFS[diff].delay;
+  switch(cmd) {
+    case 'help':    showHelp(); break;
+    case 'clear':   document.getElementById('tout').innerHTML=''; break;
+    case 'status':  showStatus(); break;
+    case 'scan':    cmdScan(DLY); break;
+    case 'exploit': cmdExploit(args, DLY); break;
+    case 'firewall_bypass': cmdFirewall(args, DLY); break;
+    case 'ids_bypass':      cmdIDS(args, DLY); break;
+    case 'crack':           cmdCrack(args, DLY); break;
+    case 'pivot':           cmdPivot(args, DLY); break;
+    case 'download':        cmdDownload(args); break;
+    case 'dodge':           cmdDodge(); break;
+    default: loseHp('不明なコマンド: ' + cmd);
+  }
+}
+
+// ===== HELP / STATUS =====
+function showHelp() {
+  print('','c-white');
+  print('=== コマンド ===','c-cyan');
+  print('  scan                  — ポートスキャン','c-white');
+  print('  exploit <port>        — 指定ポートを攻撃','c-white');
+  if (diff==='normal'||diff==='hard') {
+    print('  firewall_bypass <seq>  — FWを突破','c-white');
+  }
+  if (diff==='hard') {
+    print('  ids_bypass <sig>       — IDSを回避','c-white');
+    print('  pivot <ip>             — 内部移動','c-white');
+    print('  dodge                  — 逆探知回避','c-white');
+  }
+  print('  crack <method>        — 認証突破','c-white');
+  print('  download <path>       — ファイル取得','c-white');
+  print('  status                — 状態確認','c-white');
+  print('  clear                 — 画面クリア','c-white');
+  if (gs.sbMode) print('  admin <sub>           — 管理者コマンド','c-yellow');
+  print('','c-white');
+}
+
+function showStatus() {
+  print('','c-white');
+  print('=== ステータス ===','c-cyan');
+  print('  難易度: '+DIFFS[diff].label+'  HP: '+gs.hp+'  進捗: '+gs.progress+'%','c-white');
+  print('  スキャン: '+(gs.scanned?'済':'未')+'  侵入: '+(gs.exploited?'済':'未'),'c-white');
+  if (diff==='normal'||diff==='hard') print('  FW突破: '+(gs.firewalled?'済':'未'),'c-white');
+  if (diff==='hard') print('  IDS回避: '+(gs.idsBypassed?'済':'未')+'  Pivot: '+(gs.pivoted?'済':'未'),'c-white');
+  print('  認証突破: '+(gs.cracked?'済':'未'),'c-white');
+  print('','c-white');
+}
+
+// ===== SANDBOX ADMIN =====
+function handleAdmin(args) {
+  const sub = args[0];
+  if (sub==='win')      { triggerWin(); }
+  else if (sub==='lose') { triggerGameOver(); }
+  else if (sub==='hp')   { const v=parseInt(args[1]); if(!isNaN(v)){gs.hp=v;gs.maxHp=Math.max(gs.maxHp,v);print('[ADMIN] HP='+v,'c-yellow');} }
+  else if (sub==='time') { const v=parseInt(args[1]); if(!isNaN(v)){gs.timeLeft=v;clearInterval(timerInterval);startTimer();print('[ADMIN] time='+v,'c-yellow');} }
+  else if (sub==='progress') { const v=Math.min(100,Math.max(0,parseInt(args[1])||0)); gs.progress=v; print('[ADMIN] progress='+v,'c-yellow'); }
+  else if (sub==='stage')    { const v=Math.min(5,Math.max(0,parseInt(args[1])||0)); gs.stage=v; print('[ADMIN] stage='+v,'c-yellow'); }
+  else if (sub==='unlock') {
+    gs.scanned=true; gs.exploited=true; gs.cracked=true;
+    gs.firewalled=true; gs.idsBypassed=true; gs.pivoted=true;
+    gs.progress=75; gs.stage=4;
+    print('[ADMIN] 全解放 — download /path で終了','c-yellow');
+    print('[ADMIN] 正解パス: '+scenario.correctPath,'c-yellow');
+  }
+  else if (sub==='reveal') {
+    print('[ADMIN] シナリオ情報:','c-yellow');
+    print('  ポート: '+scenario.ports.join(', '),'c-yellow');
+    print('  脆弱ポート: '+scenario.vulnPort,'c-yellow');
+    print('  FWノック: '+scenario.fwPorts.join('→'),'c-yellow');
+    print('  IDSシグ: '+scenario.correctSig,'c-yellow');
+    print('  PivotIP: '+scenario.pivotIP,'c-yellow');
+    print('  Crackメソッド: '+scenario.correctMethod,'c-yellow');
+    print('  Downloadパス: '+scenario.correctPath,'c-yellow');
+  }
+  else { print('[ADMIN] win|lose|hp N|time N|progress N|stage N|unlock|reveal','c-yellow'); }
+}
+
+// ===== GAME COMMANDS =====
+function cmdScan(DLY) {
+  if (gs.scanned) { print('[*] スキャン済み','c-yellow'); return; }
+  gs.stage=1; gs.progress=5; updateStatus();
+  print('[*] ポートスキャン実行中...','c-yellow');
+  const lines = scenario.ports.map(p => {
+    const services = {21:'ftp',22:'ssh',23:'telnet',25:'smtp',53:'dns',80:'http',110:'pop3',143:'imap',443:'https',445:'smb',1337:'???',1433:'mssql',3306:'mysql',3389:'rdp',5432:'pgsql',8080:'http-alt',8443:'https-alt',8888:'???',9000:'???',27017:'mongodb'};
+    const svc = services[p] || '???';
+    return ['[SCAN] ' + String(p).padStart(5) + '/tcp  open  ' + svc, 'c-green'];
+  });
+  lines.push(['','c-white']);
+  lines.push(['[+] スキャン完了: ' + scenario.ports.length + ' ポート検出','c-green']);
+  pd(lines, DLY);
+  setTimeout(() => { gs.scanned=true; gs.progress=20; updateStatus(); }, lines.length*DLY+100);
+}
+
+function cmdExploit(args, DLY) {
+  if (!gs.scanned) { loseHp('先にスキャンせよ'); return; }
+  if ((diff==='normal'||diff==='hard') && !gs.firewalled && !gs.sbMode) { loseHp('FWが邪魔だ'); return; }
+  if (diff==='hard' && !gs.idsBypassed && !gs.sbMode) { loseHp('IDSが邪魔だ'); return; }
+  if (gs.exploited) { print('[*] 侵入済み','c-yellow'); return; }
+  const port = parseInt(args[0]);
+  if (isNaN(port)) { loseHp('ポート番号が必要: exploit <port>'); return; }
+  if (!scenario.ports.includes(port)) { loseHp('ポート '+port+' は検出されていない'); return; }
+  if (port !== scenario.vulnPort) { loseHp('ポート '+port+' は堅牢だ。突破できない'); return; }
+  print('[*] ポート '+port+' を攻撃中...','c-yellow');
+  const lines = [
+    ['[EXP] ペイロード送信...','c-yellow'],
+    ['[EXP] 0x'+Math.floor(Math.random()*0xFFFFFF).toString(16).toUpperCase()+' オーバーフロー検出','c-yellow'],
+    ['[EXP] シェルコード注入...','c-cyan'],
+    ['[+] リモートシェル取得！uid=0(root)','c-green'],
+    diff==='normal'?['[*] 次のステップを推理せよ','c-white']:diff==='hard'?['[*] 次のステップを推理せよ','c-white']:['[*] 次のステップを推理せよ','c-white'],
+  ];
+  pd(lines, DLY);
+  setTimeout(() => {
+    gs.exploited=true; gs.stage=2;
+    gs.progress = diff==='hard'?50:diff==='normal'?45:40;
+    updateStatus();
+    if (diff==='hard') scheduleTrace();
+  }, lines.length*DLY+100);
+}
+
+function cmdIDS(args, DLY) {
+  if (!gs.scanned) { loseHp('先にスキャンせよ'); return; }
+  if (gs.idsBypassed) { print('[*] IDS回避済み','c-yellow'); return; }
+  if (diff!=='hard' && !gs.sbMode) { loseHp('このコマンドはHARDモード専用'); return; }
+  const sig = args.join(' ');
+  if (!sig) { loseHp('シグネチャが必要: ids_bypass <sig>'); return; }
+  if (sig !== scenario.correctSig) { loseHp('シグネチャ "'+sig+'" は不一致'); return; }
+  print('[*] IDSシグネチャ "'+sig+'" を適用中...','c-yellow');
+  const lines = [
+    ['[IDS] パターンマッチング回避...','c-white'],
+    ['[IDS] センサー欺瞞完了','c-white'],
+    ['[+] IDS回避成功！','c-green'],
+  ];
+  pd(lines, DLY);
+  setTimeout(() => { gs.idsBypassed=true; gs.progress=30; updateStatus(); }, lines.length*DLY+100);
+}
+
+function cmdFirewall(args, DLY) {
+  if (!gs.scanned) { loseHp('先にスキャンせよ'); return; }
+  if (diff==='hard' && !gs.idsBypassed && !gs.sbMode) { loseHp('先にIDSを回避せよ'); return; }
+  if (gs.firewalled) { print('[*] FW突破済み','c-yellow'); return; }
+  if (diff==='easy') { loseHp('このモードにFWはない'); return; }
+  // seq must be port1-port2-port3
+  const seq = args[0];
+  if (!seq) { loseHp('シーケンスが必要: firewall_bypass <p1-p2-p3>'); return; }
+  const given = seq.split('-').map(Number);
+  const correct = scenario.fwPorts;
+  if (given.length !== 3 || given.some((v,i) => v!==correct[i])) {
+    loseHp('ポートノッキング失敗: "'+seq+'" は不正'); return;
+  }
+  print('[*] ポートノッキング '+seq+'...','c-yellow');
+  const lines = [
+    ['[FW] シーケンス検証中...','c-white'],
+    ['[FW] ACL書き換え...','c-white'],
+    ['[+] ファイアウォール突破！','c-green'],
+  ];
+  pd(lines, DLY);
+  setTimeout(() => { gs.firewalled=true; gs.progress=diff==='hard'?40:35; updateStatus(); }, lines.length*DLY+100);
+}
+
+function cmdCrack(args, DLY) {
+  if (!gs.exploited && !gs.sbMode) { loseHp('先に侵入せよ'); return; }
+  if (diff==='hard' && !gs.pivoted && !gs.sbMode) { loseHp('先にpivotせよ'); return; }
+  if (gs.cracked) { print('[*] 認証突破済み','c-yellow'); return; }
+  const method = args[0];
+  if (!method) { loseHp('メソッドが必要: crack <method>'); return; }
+  if (method !== scenario.correctMethod) { loseHp('メソッド "'+method+'" は効果がない'); return; }
+  gs.stage=3;
+  print('[*] '+method+' 攻撃実行中...','c-yellow');
+  const fakes = ['alpha***','bravo***','charlie***'];
+  let i=0;
+  const iv = setInterval(() => {
+    if (i<fakes.length) { print('[CRACK] 試行中...','c-white'); i++; }
+    else {
+      clearInterval(iv);
+      gs.cracked=true; gs.progress=75; updateStatus();
+      pd([
+        ['[+] パスワード取得！','c-yellow'],
+        ['[+] 管理者権限確立','c-green'],
+      ], 80);
+    }
+  }, Math.max(DLY,150));
+}
+
+function cmdPivot(args, DLY) {
+  if (!gs.exploited && !gs.sbMode) { loseHp('先に侵入せよ'); return; }
+  if (diff!=='hard' && !gs.sbMode) { loseHp('pivotはHARDモード専用'); return; }
+  if (gs.pivoted) { print('[*] pivot済み','c-yellow'); return; }
+  const ip = args[0];
+  if (!ip) { loseHp('IPが必要: pivot <ip>'); return; }
+  if (ip !== scenario.pivotIP) { loseHp('ホスト "'+ip+'" に接続できない'); return; }
+  print('[*] '+ip+' へ横断中...','c-yellow');
+  const lines = [
+    ['[PIVOT] トンネル確立...','c-white'],
+    ['[PIVOT] 内部DBサーバー到達','c-white'],
+    ['[+] Pivot成功！','c-green'],
+  ];
+  pd(lines, DLY);
+  setTimeout(() => { gs.pivoted=true; gs.progress=65; updateStatus(); }, lines.length*DLY+100);
+}
+
+function cmdDownload(args) {
+  if (!gs.cracked && !gs.sbMode) { loseHp('先に認証を突破せよ'); return; }
+  const path = args[0];
+  if (!path) { loseHp('パスが必要: download <path>'); return; }
+  if (path !== scenario.correctPath) { loseHp('"'+path+'" は見つからない'); return; }
+  print('[*] "'+path+'" を転送中...','c-yellow');
+  gs.stage=4; let dl=0;
+  const iv = setInterval(() => {
+    dl = Math.min(100, dl + Math.floor(Math.random()*12)+8);
+    gs.progress = Math.round(75+dl*0.25); updateStatus();
+    print('[DL] '+'█'.repeat(Math.floor(dl/5))+'░'.repeat(20-Math.floor(dl/5))+' '+dl+'%','c-cyan');
+    if (dl>=100) { clearInterval(iv); setTimeout(triggerWin,400); }
+  }, 280);
+}
+
+function cmdDodge() {
+  if (!gs.traceActive) { print('[*] 逆探知は起きていない','c-white'); return; }
+  clearInterval(traceInterval);
+  document.getElementById('traceBox').style.display='none';
+  gs.traceActive=false;
+  print('[+] 逆探知回避！','c-green');
+  if (diff==='hard') setTimeout(scheduleTrace, 25000);
+}
+
+// ===== DRAG =====
+let dragTarget=null,dragOX=0,dragOY=0;
+function dragStart(e,id) {
+  dragTarget=document.getElementById(id);
+  const r=dragTarget.getBoundingClientRect();
+  dragOX=e.clientX-r.left; dragOY=e.clientY-r.top;
+  document.addEventListener('mousemove',onDrag);
+  document.addEventListener('mouseup',onDragEnd);
+}
+function onDrag(e) { if(!dragTarget)return; dragTarget.style.left=(e.clientX-dragOX)+'px'; dragTarget.style.top=(e.clientY-dragOY)+'px'; }
+function onDragEnd() { dragTarget=null; document.removeEventListener('mousemove',onDrag); document.removeEventListener('mouseup',onDragEnd); }
+
+// ===== CLOCK / SEED DISPLAY =====
+function updateClock() {
+  const n=new Date();
+  document.getElementById('clock-display').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
+}
+setInterval(updateClock,1000); updateClock();
+document.getElementById('seedDisp').textContent = getTodaySeed();
+</script>
+</body>
+</html>
